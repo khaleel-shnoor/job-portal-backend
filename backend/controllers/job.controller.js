@@ -56,6 +56,30 @@ const updateJob = async (req, res) => {
   }
 };
 
+const updateJobStatus = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    const company = await Company.findByManagerId(req.user.id);
+    if (job.company_id !== company.id) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const { status } = req.body;
+    if (!['open', 'closed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status. Use open or closed.' });
+    }
+
+    await Job.updateStatus(req.params.id, status);
+    res.json({ message: 'Job status updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 const deleteJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -75,4 +99,4 @@ const deleteJob = async (req, res) => {
   }
 };
 
-module.exports = { getJobs, getJob, createJob, updateJob, deleteJob };
+module.exports = { getJobs, getJob, createJob, updateJob, updateJobStatus, deleteJob };

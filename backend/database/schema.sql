@@ -9,6 +9,9 @@ CREATE TABLE users (
   resume_url VARCHAR(500),
   skills TEXT,
   bio TEXT,
+  title VARCHAR(255),
+  custom_url VARCHAR(255),
+  status VARCHAR(20) CHECK (status IN ('active', 'suspended')) DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -25,6 +28,7 @@ CREATE TABLE companies (
   website VARCHAR(255),
   manager_id INT,
   approved BOOLEAN DEFAULT FALSE,
+  status VARCHAR(20) CHECK (status IN ('active', 'suspended')) DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (manager_id) REFERENCES users(id)
 );
@@ -40,6 +44,7 @@ CREATE TABLE jobs (
   location VARCHAR(255),
   type VARCHAR(50) CHECK (type IN ('full-time', 'part-time', 'remote')) NOT NULL,
   status VARCHAR(50) CHECK (status IN ('open', 'closed')) DEFAULT 'open',
+  is_taken_down BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (company_id) REFERENCES companies(id)
 );
@@ -77,3 +82,10 @@ CREATE TABLE saved_jobs (
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (job_id) REFERENCES jobs(id)
 );
+
+-- Migration: Run these ALTER statements if the tables already exist
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS title VARCHAR(255);
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_url VARCHAR(255);
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
+-- ALTER TABLE companies ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
+-- ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_taken_down BOOLEAN DEFAULT FALSE;

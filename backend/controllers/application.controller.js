@@ -6,7 +6,7 @@ const sendEmail = require('../utils/sendEmail');
 
 const applyForJob = async (req, res) => {
   try {
-    const { job_id, cover_letter } = req.body;
+    const { job_id, cover_letter, college_name, cgpa, willing_to_relocate, experience_years } = req.body;
     const resume_url = req.file ? req.file.path : null;
 
     // Check if already applied
@@ -19,7 +19,11 @@ const applyForJob = async (req, res) => {
       job_id,
       user_id: req.user.id,
       cover_letter,
-      resume_url
+      resume_url,
+      college_name,
+      cgpa: cgpa ? parseFloat(cgpa) : null,
+      willing_to_relocate: willing_to_relocate === 'true' || willing_to_relocate === true,
+      experience_years: experience_years ? parseInt(experience_years) : 0,
     });
 
     res.status(201).json({ message: 'Application submitted successfully', applicationId });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getJobs, getJob, createJob, updateJob, deleteJob } = require('../controllers/job.controller');
+const { getJobs, getJob, createJob, updateJob, updateJobStatus, deleteJob } = require('../controllers/job.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const roleMiddleware = require('../middleware/role.middleware');
 
@@ -12,6 +12,7 @@ router.use(authMiddleware);
 
 router.post('/', roleMiddleware(['manager']), createJob);
 router.put('/:id', roleMiddleware(['manager']), updateJob);
+router.patch('/:id/status', roleMiddleware(['manager']), updateJobStatus);
 router.delete('/:id', roleMiddleware(['manager']), deleteJob);
 
 module.exports = router;

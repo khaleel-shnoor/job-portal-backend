@@ -1,4 +1,6 @@
 const Company = require('../models/company.model');
+const Job = require('../models/job.model');
+const Application = require('../models/application.model');
 
 const getProfile = async (req, res) => {
   try {
@@ -21,7 +23,7 @@ const updateProfile = async (req, res) => {
 
     const updateData = req.body;
     if (req.file) {
-      updateData.logo_url = req.file.path; // Cloudinary URL
+      updateData.logo_url = req.file.path;
     }
 
     await Company.updateProfile(company.id, updateData);
@@ -31,4 +33,56 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { getProfile, updateProfile };
+const getMyJobs = async (req, res) => {
+  try {
+    const company = await Company.findByManagerId(req.user.id);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    const jobs = await Job.findByCompanyId(company.id);
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const getDashboardStats = async (req, res) => {
+  try {
+    const company = await Company.findByManagerId(req.user.id);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    const jobs = await Job.findByCompanyId(company.id);
+    const allApplications = await Application.findByCompanyId(company.id);
+
+    const totalJobs = jobs.length;
+    const totalApplications = allApplications.length;
+    const shortlisted = allApplications.filter(a => a.status === 'shortlisted').length;
+    const hired = allApplications.filter(a => a.status === 'hired').length;
+    const pendingReviews = allApplications.filter(a => a.status === 'applied').length;
+
+    const recentApplications = allApplications.slice(0, 5).map(app => ({
+      id: app.id,
+      name: app.name,
+      email: app.email,
+      job_title: app.job_title,
+      status: app.status,
+      applied_at: app.applied_at,
+    }));
+
+    res.json({
+      company,
+      totalJobs,
+      totalApplications,
+      shortlisted,
+      hired,
+      pendingReviews,
+      recentApplications,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { getProfile, updateProfile, getMyJobs, getDashboardStats };

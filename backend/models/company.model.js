@@ -16,7 +16,13 @@ class Company {
   }
 
   static async findAll() {
-    const { rows } = await pool.query('SELECT * FROM companies');
+    const { rows } = await pool.query(`
+      SELECT c.*, COUNT(j.id)::int AS job_count
+      FROM companies c
+      LEFT JOIN jobs j ON j.company_id = c.id AND j.status = 'open' AND j.is_taken_down = false
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+    `);
     return rows;
   }
 
@@ -30,6 +36,10 @@ class Company {
 
   static async approve(id) {
     await pool.query('UPDATE companies SET approved = true WHERE id = $1', [id]);
+  }
+
+  static async updateStatus(id, status) {
+    await pool.query('UPDATE companies SET status = $1 WHERE id = $2', [status, id]);
   }
 }
 

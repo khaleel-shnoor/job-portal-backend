@@ -12,10 +12,23 @@ class Job {
 
   static async findAll() {
     const { rows } = await pool.query(`
-      SELECT j.*, c.name as company_name, c.logo_url
+      SELECT j.*, c.name AS company_name, c.logo_url
       FROM jobs j
       JOIN companies c ON j.company_id = c.id
-      WHERE j.status = 'open'
+      WHERE j.status = 'open' AND j.is_taken_down = false
+      ORDER BY j.created_at DESC
+    `);
+    return rows;
+  }
+
+  static async findAllAdmin() {
+    const { rows } = await pool.query(`
+      SELECT j.*, c.name AS company_name,
+             COUNT(a.id)::int AS applicant_count
+      FROM jobs j
+      JOIN companies c ON j.company_id = c.id
+      LEFT JOIN applications a ON a.job_id = j.id
+      GROUP BY j.id, c.name
       ORDER BY j.created_at DESC
     `);
     return rows;
@@ -23,7 +36,7 @@ class Job {
 
   static async findById(id) {
     const { rows } = await pool.query(`
-      SELECT j.*, c.name as company_name, c.logo_url, c.about as company_about
+      SELECT j.*, c.name AS company_name, c.logo_url, c.about AS company_about
       FROM jobs j
       JOIN companies c ON j.company_id = c.id
       WHERE j.id = $1
@@ -32,7 +45,16 @@ class Job {
   }
 
   static async findByCompanyId(companyId) {
-    const { rows } = await pool.query('SELECT * FROM jobs WHERE company_id = $1 ORDER BY created_at DESC', [companyId]);
+    const { rows } = await pool.query(`
+      SELECT j.*,
+             COUNT(a.id)::int AS applications_count,
+             COUNT(CASE WHEN a.status = 'shortlisted' THEN 1 END)::int AS shortlisted_count
+      FROM jobs j
+      LEFT JOIN applications a ON a.job_id = j.id
+      WHERE j.company_id = $1
+      GROUP BY j.id
+      ORDER BY j.created_at DESC
+    `, [companyId]);
     return rows;
   }
 
@@ -42,6 +64,14 @@ class Job {
       'UPDATE jobs SET title = $1, description = $2, salary_min = $3, salary_max = $4, location = $5, type = $6, status = $7 WHERE id = $8',
       [title, description, salary_min, salary_max, location, type, status, id]
     );
+  }
+
+  static async updateStatus(id, status) {
+    await pool.query('UPDATE jobs SET status = $1 WHERE id = $2', [status, id]);
+  }
+
+  static async updateTakenDown(id, isTakenDown) {
+    await pool.query('UPDATE jobs SET is_taken_down = $1 WHERE id = $2', [isTakenDown, id]);
   }
 
   static async delete(id) {

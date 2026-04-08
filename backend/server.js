@@ -7,6 +7,12 @@ dotenv.config();
 
 const app = express();
 
+
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  next();
+});
+
 // Middleware
 app.use(helmet());
 app.use(cors());
